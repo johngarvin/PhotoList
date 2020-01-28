@@ -25,6 +25,10 @@
 const std::string json_url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
 const std::string background_filename = "images/1.jpg";
 
+const char * font_filename = "fonts/LiberationSans-Regular.ttf";
+const int headline_font_size = 48;
+const int subhead_font_size = 24;
+
 // Choose the smallest photos at least this width in pixels
 const int minimum_width = 400;
 
@@ -214,10 +218,10 @@ public:
   }
 
   void render_all(const std::list<SDL_Surface *> & left_boxes,
-                 const std::list<SDL_Surface *> & right_boxes,
-                 SDL_Surface * fbox,
-                 SDL_Surface * headline,
-                 SDL_Surface * subhead) {
+                  const std::list<SDL_Surface *> & right_boxes,
+                  SDL_Surface * fbox,
+                  SDL_Surface * headline,
+                  SDL_Surface * subhead) {
     render_background();
 
     // render headline
@@ -273,12 +277,8 @@ private:
   int _left_size;  // size of _left_surfaces
   int _right_size; // size of _right_surfaces
   
-  const char * _font_filename = "fonts/LiberationSans-Regular.ttf";
   TTF_Font * _headline_font;
   TTF_Font * _subhead_font;
-  const int _headline_font_size = 48;
-  const int _subhead_font_size = 24;
-  
   PLView _view;
 
 public:
@@ -295,11 +295,11 @@ public:
     if (result != 0) {
       error("Couldn't initialize TTF");
     }
-    _headline_font = TTF_OpenFont(_font_filename, _headline_font_size);
+    _headline_font = TTF_OpenFont(font_filename, headline_font_size);
     if (_headline_font == nullptr) {
       error("Couldn't open font");
     }
-    _subhead_font = TTF_OpenFont(_font_filename, _subhead_font_size);
+    _subhead_font = TTF_OpenFont(font_filename, subhead_font_size);
     if (_subhead_font == nullptr) {
       error("Couldn't open font");
     }
