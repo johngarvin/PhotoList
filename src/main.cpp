@@ -22,7 +22,8 @@
 #include "PhotoData.hpp"
 #include "util.hpp"
 
-const char * json_url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
+const std::string json_url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
+const std::string background_filename = "images/1.jpg";
 
 // Choose the smallest photos at least this width in pixels
 const int minimum_width = 400;
@@ -75,6 +76,8 @@ static size_t write_memory_callback(void * contents,
   return realsize;
 }
 
+// Fetch data from the given url. Allocates memory in the memory field of the
+// MemoryStruct returned.
 static MemoryStruct fetch(std::string url) {
   struct MemoryStruct chunk;
   chunk.size = 0;                    /* no data yet */ 
@@ -93,6 +96,7 @@ static MemoryStruct fetch(std::string url) {
   return chunk;
 }
 
+// Creates a list of PhotoData.
 static std::list<PhotoData> get_photo_data_from_json_url(std::string url) {
   MemoryStruct json = fetch(url);
   std::list<PhotoData> data = parse_and_filter(json.memory, aspect_ratio_string, 400);
@@ -257,8 +261,6 @@ public:
 
 class PLViewWrapper : Uncopyable {
 private:
-  const char * _background_filename = "images/1.jpg";
-
   std::list<PhotoData> _games;
   std::list<PhotoData>::iterator _fgame;  // box that is focused
   std::list<PhotoData>::iterator _begin_displayed;
@@ -280,11 +282,7 @@ private:
   PLView _view;
 
 public:
-  PLViewWrapper() : _view(),
-                    _games(get_photo_data_from_json_url(json_url)),
-                    _fgame(_games.begin()),
-                    _begin_displayed(_fgame),
-                    _end_displayed(_fgame) {
+  PLViewWrapper() : _view() {
     int result;
 
     int img_flags = IMG_INIT_JPG;
@@ -306,11 +304,6 @@ public:
       error("Couldn't open font");
     }
 
-    SDL_Surface * background = IMG_Load(_background_filename);
-    if (background == NULL) {
-      error("could not load background");
-    }
-    _view.set_background(background);
   }
 
   ~PLViewWrapper() {
@@ -330,6 +323,19 @@ public:
     }
   }
 
+  void show_background(std::string filename) {
+    SDL_Surface * background = IMG_Load(filename.c_str());
+    if (background == NULL) {
+      error("could not load background");
+    }
+    _view.set_background(background);
+  }
+  
+  void load_games_from_json_url(std::string url) {
+    _games = get_photo_data_from_json_url(url);
+    _fgame = _games.begin();
+  }
+  
   void initialize_surfaces() {
     _left_size = 0;
     _right_size = 0;
@@ -473,6 +479,8 @@ public:
   }
 
   void run() {
+    _view_wrapper.show_background(background_filename);
+    _view_wrapper.load_games_from_json_url(json_url);
     _view_wrapper.initialize_surfaces();
     _view_wrapper.render_all();
     
