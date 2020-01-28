@@ -367,11 +367,6 @@ public:
       }
       render_all();
     }
-#if 0
-    // debug
-    std::cout << "After move right: left surface " << _left_surfaces.size() << "=" << _left_size << std::endl;
-    std::cout << "right surface " << _right_surfaces.size() << "=" << _right_size << std::endl;
-#endif
   }
 
   void move_left() {
@@ -415,11 +410,6 @@ public:
 
       render_all();
     }
-#if 0
-    // debug
-    std::cout << "After move left: left surfaces " << _left_surfaces.size() << "=" << _left_size << std::endl;
-    std::cout << "right surfaces " << _right_surfaces.size() << "=" << _right_size << std::endl;
-#endif
   }
 };
 
