@@ -24,6 +24,7 @@
 
 const std::string json_url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
 const std::string background_filename = "images/1.jpg";
+const std::string dots_filename = "images/dots.jpg";
 
 const char * font_filename = "fonts/LiberationSans-Regular.ttf";
 const int headline_font_size = 48;
@@ -274,10 +275,11 @@ private:
   SDL_Surface * _fbox_surface;
   std::list<SDL_Surface *> _left_surfaces;
   std::list<SDL_Surface *> _right_surfaces;
-  SDL_Surface * _headline;
-  SDL_Surface * _subhead;
   int _left_size;  // size of _left_surfaces
   int _right_size; // size of _right_surfaces
+  SDL_Surface * _headline;
+  SDL_Surface * _subhead;
+  SDL_Surface * _dots;
   
   TTF_Font * _headline_font;
   TTF_Font * _subhead_font;
@@ -324,6 +326,7 @@ public:
     for (auto s : _right_surfaces) {
       SDL_FreeSurface(s);
     }
+    SDL_FreeSurface(_dots);
   }
 
   void show_background(std::string filename) {
@@ -379,6 +382,11 @@ public:
     }
 
     create_headline_and_subhead();
+
+    _dots = IMG_Load(dots_filename.c_str());
+    if (_dots == nullptr) {
+      error("couldn't load dots");
+    }
   }
     
   void render_all() {
@@ -390,6 +398,7 @@ public:
   }
 
   void move_right() {
+    bool new_image = false;
     _fgame++;
     if (_fgame == _games.end()) {
       _fgame--;
@@ -410,13 +419,6 @@ public:
       _right_surfaces.pop_front();
       _right_size--;
 
-      // if there's a new rightmost, grab it
-      if (_end_displayed != _games.end()) {
-        _right_surfaces.push_back(load_jpeg_from_url(_end_displayed->url));
-        _right_size++;
-        _end_displayed++;
-      }
-
       if (_headline != nullptr) {
         SDL_FreeSurface(_headline);
       }
@@ -424,6 +426,16 @@ public:
         SDL_FreeSurface(_subhead);
       }
       create_headline_and_subhead();
+
+      // if there's a new rightmost, grab it
+      if (_end_displayed != _games.end()) {
+        _right_size++;
+        _right_surfaces.push_back(_dots);
+        render_all();
+        _right_surfaces.pop_back();
+        _right_surfaces.push_back(load_jpeg_from_url(_end_displayed->url));
+        _end_displayed++;
+      }
       render_all();
     }
 #if 0
@@ -454,13 +466,18 @@ public:
       _left_surfaces.pop_front();
       _left_size--;
 
+      create_headline_and_subhead();
+
       // if there's a new leftmost, grab it
       if (_begin_displayed != _games.begin()) {
         _begin_displayed--;
-        _left_surfaces.push_back(load_jpeg_from_url(_begin_displayed->url));
         _left_size++;
+        _left_surfaces.push_back(_dots);
+        render_all();
+        _left_surfaces.pop_back();
+        _left_surfaces.push_back(load_jpeg_from_url(_begin_displayed->url));
       }
-      create_headline_and_subhead();
+
       render_all();
     }
 #if 0
