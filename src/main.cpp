@@ -238,7 +238,6 @@ public:
     if (_subhead_font == nullptr) {
       error("Couldn't open font");
     }
-
   }
 
   ~PLViewWrapper() {
@@ -282,7 +281,7 @@ public:
                                     white);
   }
 
-  void initialize_surfaces() {
+  void create_surfaces() {
     _left_size = 0;
     _right_size = 0;
 
@@ -333,6 +332,14 @@ public:
     if (_fgame == _games.end()) {
       _fgame--;
     } else {
+      if (_headline != nullptr) {
+        SDL_FreeSurface(_headline);
+      }
+      if (_subhead != nullptr) {
+        SDL_FreeSurface(_subhead);
+      }
+      create_headline_and_subhead();
+
       // remove leftmost if left is full
       if (_left_size == _view.n_displayed_each_side) {
         SDL_FreeSurface(_left_surfaces.back());
@@ -348,14 +355,6 @@ public:
       _fbox_surface = _right_surfaces.front();
       _right_surfaces.pop_front();
       _right_size--;
-
-      if (_headline != nullptr) {
-        SDL_FreeSurface(_headline);
-      }
-      if (_subhead != nullptr) {
-        SDL_FreeSurface(_subhead);
-      }
-      create_headline_and_subhead();
 
       // if there's a new rightmost, grab it
       if (_end_displayed != _games.end()) {
@@ -379,6 +378,14 @@ public:
     if (_fgame != _games.begin()) {
       _fgame--;
 
+      if (_headline != nullptr) {
+        SDL_FreeSurface(_headline);
+      }
+      if (_subhead != nullptr) {
+        SDL_FreeSurface(_subhead);
+      }
+      create_headline_and_subhead();
+
       // remove rightmost if right is full
       if (_right_size == _view.n_displayed_each_side) {
         SDL_FreeSurface(_right_surfaces.back());
@@ -395,8 +402,6 @@ public:
       _fbox_surface = _left_surfaces.front();
       _left_surfaces.pop_front();
       _left_size--;
-
-      create_headline_and_subhead();
 
       // if there's a new leftmost, grab it
       if (_begin_displayed != _games.begin()) {
@@ -416,7 +421,6 @@ public:
     std::cout << "right surfaces " << _right_surfaces.size() << "=" << _right_size << std::endl;
 #endif
   }
-
 };
 
 class PLController : Uncopyable {
@@ -430,7 +434,7 @@ public:
   void run() {
     _view_wrapper.show_background(background_filename);
     _view_wrapper.load_games_from_json_url(json_url);
-    _view_wrapper.initialize_surfaces();
+    _view_wrapper.create_surfaces();
     _view_wrapper.render_all();
     
     SDL_Event event;
