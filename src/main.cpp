@@ -274,15 +274,18 @@ private:
   SDL_Surface * _fbox_surface;
   std::list<SDL_Surface *> _left_surfaces;
   std::list<SDL_Surface *> _right_surfaces;
+  SDL_Surface * _headline;
+  SDL_Surface * _subhead;
   int _left_size;  // size of _left_surfaces
   int _right_size; // size of _right_surfaces
   
   TTF_Font * _headline_font;
   TTF_Font * _subhead_font;
+
   PLView _view;
 
 public:
-  PLViewWrapper() : _view() {
+  PLViewWrapper() : _view(), _headline(nullptr), _subhead(nullptr) {
     int result;
 
     int img_flags = IMG_INIT_JPG;
@@ -336,6 +339,16 @@ public:
     _fgame = _games.begin();
   }
   
+  void create_headline_and_subhead() {
+    const SDL_Color white = {255, 255, 255, 255};
+    _headline = TTF_RenderUTF8_Solid(_headline_font,
+                                     _fgame->headline.c_str(),
+                                     white);
+    _subhead = TTF_RenderUTF8_Solid(_subhead_font,
+                                    _fgame->subhead.c_str(),
+                                    white);
+  }
+
   void initialize_surfaces() {
     _left_size = 0;
     _right_size = 0;
@@ -364,35 +377,16 @@ public:
       _right_size++;
       _end_displayed++;
     }
+
+    create_headline_and_subhead();
   }
-  
-  void render_all() {
-    // Create headline and subhead
-    const SDL_Color white = {255, 255, 255, 255};
-    SDL_Surface * headline;
-    if (_fgame->headline.empty()) {
-      headline = nullptr;
-    } else {
-      headline = TTF_RenderUTF8_Solid(_headline_font,
-                                      _fgame->headline.c_str(),
-                                      white);
-    }
-    SDL_Surface * subhead;
-    if (_fgame->subhead.empty()) {
-      subhead = nullptr;
-    } else {
-      subhead = TTF_RenderUTF8_Solid(_subhead_font,
-                                     _fgame->subhead.c_str(),
-                                     white);
-    }
     
+  void render_all() {
     _view.render_all(_left_surfaces,
                     _right_surfaces,
                     _fbox_surface,
-                    headline,
-                    subhead);
-    SDL_FreeSurface(headline);
-    SDL_FreeSurface(subhead);
+                    _headline,
+                    _subhead);
   }
 
   void move_right() {
@@ -422,7 +416,14 @@ public:
         _right_size++;
         _end_displayed++;
       }
-      
+
+      if (_headline != nullptr) {
+        SDL_FreeSurface(_headline);
+      }
+      if (_subhead != nullptr) {
+        SDL_FreeSurface(_subhead);
+      }
+      create_headline_and_subhead();
       render_all();
     }
 #if 0
@@ -459,6 +460,7 @@ public:
         _left_surfaces.push_back(load_jpeg_from_url(_begin_displayed->url));
         _left_size++;
       }
+      create_headline_and_subhead();
       render_all();
     }
 #if 0
