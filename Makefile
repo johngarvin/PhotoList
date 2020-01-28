@@ -22,8 +22,8 @@ external-libs-install/SDL2_ttf-install/lib/libSDL2_ttf.dylib: external-libs-inst
 external-libs-install/curl-install/lib/libcurl.dylib:
 	cd external-libs/curl-7.68.0 && ./configure --prefix=$(CURDIR)/external-libs-install/curl-install && $(MAKE) -j4 && $(MAKE) install
 
-PhotoList: Makefile src/main.cpp src/JsonFilter.cpp src/JsonFilter.hpp src/PhotoData.hpp src/util.cpp src/util.hpp external-src/json11-master/json11.cpp external-src/json11-master/json11.hpp external-libs-install/SDL2-install/lib/libSDL2.dylib external-libs-install/SDL2_image-install/lib/libSDL2_image.dylib external-libs-install/SDL2_ttf-install/lib/libSDL2_ttf.dylib external-libs-install/curl-install/lib/libcurl.dylib
-	$(CC) -o PhotoList -O3 -g -fsanitize=undefined -fsanitize=address -std=c++11 src/main.cpp src/JsonFilter.cpp src/util.cpp external-src/json11-master/json11.cpp $(LIBS) $(INCLUDES)
+PhotoList: Makefile src/main.cpp src/JsonFilter.cpp src/JsonFilter.hpp src/PhotoData.hpp src/util.cpp src/util.hpp src/Download.cpp src/Download.hpp external-src/json11-master/json11.cpp external-src/json11-master/json11.hpp external-libs-install/SDL2-install/lib/libSDL2.dylib external-libs-install/SDL2_image-install/lib/libSDL2_image.dylib external-libs-install/SDL2_ttf-install/lib/libSDL2_ttf.dylib external-libs-install/curl-install/lib/libcurl.dylib
+	$(CC) -o PhotoList -O3 -g -fsanitize=undefined -fsanitize=address -std=c++11 src/main.cpp src/JsonFilter.cpp src/util.cpp src/Download.cpp external-src/json11-master/json11.cpp $(LIBS) $(INCLUDES)
 
 .PHONY: clean
 clean:
