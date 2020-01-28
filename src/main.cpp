@@ -24,6 +24,9 @@
 
 const char * json_url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
 
+// Choose the smallest photos at least this width in pixels
+const int minimum_width = 400;
+
 // Set aspect ratio here
 static const char * aspect_ratio_string = "16:9";
 static int box_height_for_width(int width) {
@@ -125,15 +128,15 @@ private:
   int _fbox_w;
   int _fbox_h;
 
-  void paint_background() {
+  void render_background() {
     int result = SDL_BlitScaled(_background, NULL, _wsurface, NULL);
     if (result != 0) {
-      error("paint_background: couldn't blit background");
+      error("render_background: couldn't blit background");
     }
     SDL_UpdateWindowSurface(_window);
   }
   
-  void paint_surface(SDL_Surface * box, int x, int y, int w, int h) {
+  void render_surface(SDL_Surface * box, int x, int y, int w, int h) {
     SDL_Rect dstrect;
     dstrect.x = x;
     dstrect.y = y;
@@ -141,7 +144,7 @@ private:
     dstrect.h = h;
     int result = SDL_BlitScaled(box, NULL, _wsurface, &dstrect);
     if (result != 0) {
-      error("paint_surface: couldn't blit surface");
+      error("render_surface: couldn't blit surface");
     }
   }
 
@@ -203,19 +206,19 @@ public:
   
   void set_background(SDL_Surface * background) {
     _background = background;
-    paint_background();
+    render_background();
   }
 
-  void paint_all(const std::list<SDL_Surface *> & left_boxes,
+  void render_all(const std::list<SDL_Surface *> & left_boxes,
                  const std::list<SDL_Surface *> & right_boxes,
                  SDL_Surface * fbox,
                  SDL_Surface * headline,
                  SDL_Surface * subhead) {
-    paint_background();
+    render_background();
 
     // render headline
     if (headline != nullptr) {
-      paint_surface(headline,
+      render_surface(headline,
                     _width / 2 - headline->w / 2,
                     _box_middle_y - _fbox_h / 2 - _box_spacing,
                     headline->w,
@@ -224,27 +227,27 @@ public:
 
     // render subhead
     if (subhead != nullptr) {
-      paint_surface(subhead,
+      render_surface(subhead,
                     _width / 2 - subhead->w / 2,
                     _box_middle_y + _fbox_h / 2 + _box_spacing,
                     subhead->w,
                     subhead->h);
     }
     
-    // paint fbox
-    paint_surface(fbox, _fbox_x, _fbox_y, _fbox_w, _fbox_h);
+    // render fbox
+    render_surface(fbox, _fbox_x, _fbox_y, _fbox_w, _fbox_h);
 
     // render left boxes
     int x = _fbox_x - _box_spacing - _box_w;
     for (auto b : left_boxes) {
-      paint_surface(b, x, _box_y, _box_w, _box_h);
+      render_surface(b, x, _box_y, _box_w, _box_h);
       x -= _box_w + _box_spacing;
     }
     
     // render right boxes
     x = _fbox_x + _fbox_w + _box_spacing;
     for (auto b : right_boxes) {
-      paint_surface(b, x, _box_y, _box_w, _box_h);
+      render_surface(b, x, _box_y, _box_w, _box_h);
       x += _box_w + _box_spacing;
     }
 
@@ -256,8 +259,8 @@ class PLViewWrapper : Uncopyable {
 private:
   const char * _background_filename = "images/1.jpg";
 
-  std::list<PhotoData> _boxes;
-  std::list<PhotoData>::iterator _fbox;  // box that is focused
+  std::list<PhotoData> _games;
+  std::list<PhotoData>::iterator _fgame;  // box that is focused
   std::list<PhotoData>::iterator _begin_displayed;
   std::list<PhotoData>::iterator _end_displayed;
   
@@ -278,10 +281,10 @@ private:
 
 public:
   PLViewWrapper() : _view(),
-                    _boxes(get_photo_data_from_json_url(json_url)),
-                    _fbox(_boxes.begin()),
-                    _begin_displayed(_fbox),
-                    _end_displayed(_fbox) {
+                    _games(get_photo_data_from_json_url(json_url)),
+                    _fgame(_games.begin()),
+                    _begin_displayed(_fgame),
+                    _end_displayed(_fgame) {
     int result;
 
     int img_flags = IMG_INIT_JPG;
@@ -311,8 +314,8 @@ public:
   }
 
   ~PLViewWrapper() {
-    while (!_boxes.empty()) {
-      _boxes.pop_back();
+    while (!_games.empty()) {
+      _games.pop_back();
     }
     IMG_Quit();
     TTF_CloseFont(_headline_font);
@@ -331,12 +334,12 @@ public:
     _left_size = 0;
     _right_size = 0;
 
-    _fbox_surface = load_jpeg_from_url(_fbox->url);
+    _fbox_surface = load_jpeg_from_url(_fgame->url);
 
     // Create displayed left boxes in right to left order
-    _begin_displayed = _fbox;
+    _begin_displayed = _fgame;
     for (int i = 0; i < _view.n_displayed_each_side; i++) {
-      if (_begin_displayed == _boxes.begin()) {
+      if (_begin_displayed == _games.begin()) {
         break;
       }
       _begin_displayed--;
@@ -345,10 +348,10 @@ public:
     }
 
     // Create displayed right boxes in left to right order
-    _end_displayed = _fbox;
+    _end_displayed = _fgame;
     _end_displayed++;
     for (int i = 0; i < _view.n_displayed_each_side; i++) {
-      if (_end_displayed == _boxes.end()) {
+      if (_end_displayed == _games.end()) {
         break;
       }
       _right_surfaces.push_back(load_jpeg_from_url(_end_displayed->url));
@@ -357,27 +360,27 @@ public:
     }
   }
   
-  void paint_all() {
+  void render_all() {
     // Create headline and subhead
     const SDL_Color white = {255, 255, 255, 255};
     SDL_Surface * headline;
-    if (_fbox->headline.empty()) {
+    if (_fgame->headline.empty()) {
       headline = nullptr;
     } else {
       headline = TTF_RenderUTF8_Solid(_headline_font,
-                                      _fbox->headline.c_str(),
+                                      _fgame->headline.c_str(),
                                       white);
     }
     SDL_Surface * subhead;
-    if (_fbox->subhead.empty()) {
+    if (_fgame->subhead.empty()) {
       subhead = nullptr;
     } else {
       subhead = TTF_RenderUTF8_Solid(_subhead_font,
-                                     _fbox->subhead.c_str(),
+                                     _fgame->subhead.c_str(),
                                      white);
     }
     
-    _view.paint_all(_left_surfaces,
+    _view.render_all(_left_surfaces,
                     _right_surfaces,
                     _fbox_surface,
                     headline,
@@ -387,9 +390,9 @@ public:
   }
 
   void move_right() {
-    _fbox++;
-    if (_fbox == _boxes.end()) {
-      _fbox--;
+    _fgame++;
+    if (_fgame == _games.end()) {
+      _fgame--;
     } else {
       // remove leftmost if left is full
       if (_left_size == _view.n_displayed_each_side) {
@@ -408,21 +411,24 @@ public:
       _right_size--;
 
       // if there's a new rightmost, grab it
-      if (_end_displayed != _boxes.end()) {
+      if (_end_displayed != _games.end()) {
         _right_surfaces.push_back(load_jpeg_from_url(_end_displayed->url));
         _right_size++;
         _end_displayed++;
       }
       
-      paint_all();
+      render_all();
     }
+#if 0
+    // debug
     std::cout << "After move right: left surface " << _left_surfaces.size() << "=" << _left_size << std::endl;
     std::cout << "right surface " << _right_surfaces.size() << "=" << _right_size << std::endl;
+#endif
   }
 
   void move_left() {
-    if (_fbox != _boxes.begin()) {
-      _fbox--;
+    if (_fgame != _games.begin()) {
+      _fgame--;
 
       // remove rightmost if right is full
       if (_right_size == _view.n_displayed_each_side) {
@@ -442,15 +448,18 @@ public:
       _left_size--;
 
       // if there's a new leftmost, grab it
-      if (_begin_displayed != _boxes.begin()) {
+      if (_begin_displayed != _games.begin()) {
         _begin_displayed--;
         _left_surfaces.push_back(load_jpeg_from_url(_begin_displayed->url));
         _left_size++;
       }
-      paint_all();
+      render_all();
     }
+#if 0
+    // debug
     std::cout << "After move left: left surfaces " << _left_surfaces.size() << "=" << _left_size << std::endl;
     std::cout << "right surfaces " << _right_surfaces.size() << "=" << _right_size << std::endl;
+#endif
   }
 
 };
@@ -465,7 +474,7 @@ public:
 
   void run() {
     _view_wrapper.initialize_surfaces();
-    _view_wrapper.paint_all();
+    _view_wrapper.render_all();
     
     SDL_Event event;
     bool is_running = true;

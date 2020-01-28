@@ -19,7 +19,7 @@ static json11::Json parse_json(const char * json_string) {
 // From the given JSON, select a sequence of photos. Each photo generally comes
 // in multiple aspect ratios and sizes. Of the photos with the given aspect
 // ratio, grab the photo with the smallest width that is at least minimum_width.
-static std::list<PhotoData> filter(const json11::Json json,
+static std::list<PhotoData> filter(json11::Json & json,
                                    std::string aspect_ratio_string,
                                    int minimum_width) {
   std::list<PhotoData> data;
@@ -60,5 +60,6 @@ static std::list<PhotoData> filter(const json11::Json json,
 }
 
 std::list<PhotoData> parse_and_filter(const char * json_string, std::string aspect_ratio, int minimum_width) {
-  return filter(parse_json(json_string), aspect_ratio, minimum_width);
+  json11::Json json = parse_json(json_string);
+  return filter(json, aspect_ratio, minimum_width);
 }
